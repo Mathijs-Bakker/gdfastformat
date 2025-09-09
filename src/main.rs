@@ -1,36 +1,31 @@
- #![warn(
-     clippy::all,
-     clippy::pedantic,
-     clippy::nursery,
-     // clippy::cargo,
- )]
-
-use anyhow::Result;
-use std::fs;
-use std::env;
+#![warn(
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+)]
 
 mod parser;
 mod formatter;
 
-use parser::parse_code;
+use parser::GdscriptParser;
 use formatter::format_tree;
 
-fn main() -> Result<()> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        eprintln!("Usage: {} <gdscript_file>", args[0]);
-        std::process::exit(1);
+fn main() {
+    let mut parser = GdscriptParser::new();
+
+    let source = r#"
+func _ready():
+    print("Hello World")
+"#;
+
+    match parser.parse(source) {
+        Ok(tree) => {
+            println!("Parsed successfully! Root node kind: {}", tree.root_node().kind());
+
+            // Format the parsed tree
+            let formatted = format_tree(source, &tree);
+            println!("Formatted output:\n{}", formatted);
+        }
+        Err(err) => eprintln!("Parse error: {}", err),
     }
-
-    let filepath = &args[1];
-    let source = fs::read_to_string(filepath)?;
-
-    if let Some(tree) = parse_code(&source) {
-        let formatted = format_tree(&source, &tree);
-        println!("{formatted}");
-    } else {
-        eprintln!("Failed to parse the code.");
-    }
-
-    Ok(())
 }

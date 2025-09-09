@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
-tree-sitter = "0.23"
+tree-sitter = "0.25"
 # tree-sitter-gdscript = { git = "https://github.com/PrestonKnopp/tree-sitter-gdscript" }
 tree-sitter-gdscript = { path = "../tree-sitter-gdscript" }
 # tree-sitter-gdscript = "6.0.0"

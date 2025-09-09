@@ -1,5 +1,6 @@
 use tree_sitter::{Node, Tree};
 
+
 /// Format ``GDScript`` source code based on Tree-sitter AST.
 pub fn format_tree(source: &str, tree: &Tree) -> String {
     let root = tree.root_node();
