@@ -1,51 +1,61 @@
-use tree_sitter::{Node, Tree};
-use std::fmt::Write;
+use tree_sitter::{Node, TreeCursor, Language};
 
-pub fn format_tree(source: &str, tree: &Tree) -> String {
-    let mut output = String::new();
-    format_node(source, tree.root_node(), 0, &mut output);
-    output
-}
-
-const BLOCK_KINDS: &[&str] = &[
-    "function_definition",
-    "if_statement",
-    "for_statement",
-    "while_statement",
-    "match_statement",
-    "class_definition",
-];
-
-fn format_node(source: &str, node: Node, indent: usize, output: &mut String) {
+/// Recursively write a node and its children into the output string with correct indentation.
+pub fn write_node(node: Node, source: &str, output: &mut String, indent: usize) {
     let kind = node.kind();
 
-    // Handle comments directly
-    if kind == "comment" {
-        let text = node.utf8_text(source.as_bytes()).unwrap_or("").trim();
+    // Handle leaf nodes
+    if node.child_count() == 0 {
+        let text = source[node.byte_range()].trim();
         if !text.is_empty() {
-            let _ = writeln!(output, "{}{}", " ".repeat(indent * 4), text);
+            output.push_str(text);
         }
         return;
     }
 
-    // Handle blocks (functions, classes, ifs, loops, etc.)
-    if BLOCK_KINDS.contains(&kind) {
-        // Print only header line (first line)
-        let header_line = node.utf8_text(source.as_bytes()).unwrap_or("").lines().next().unwrap_or("");
-        let _ = writeln!(output, "{}{}", " ".repeat(indent * 4), header_line);
+    match kind {
+        // Structural nodes that introduce indentation
+        "class" | "func" | "if" | "for" | "while" => {
+            output.push_str(&"    ".repeat(indent));
+            for child in node.named_children(&mut node.walk()) {
+                write_node(child, source, output, indent);
+            }
+            output.push('\n');
+        }
 
-        // Recurse only into the block body
-        for child in node.children(&mut node.walk()) {
-            if child.start_byte() > node.start_byte() {
-                format_node(source, child, indent + 1, output);
+        // Blocks of code (body of function, if, etc.) — indent children
+        "block" | "func_body" | "if_body" | "for_body" | "while_body" => {
+            for child in node.named_children(&mut node.walk()) {
+                output.push_str(&"    ".repeat(indent + 1));
+                write_node(child, source, output, indent + 1);
+                output.push('\n');
             }
         }
-        return;
-    }
 
-    // Treat any leaf node or "expression" node as a single line
-    let text = node.utf8_text(source.as_bytes()).unwrap_or("").trim();
-    if !text.is_empty() {
-        let _ = writeln!(output, "{}{}", " ".repeat(indent * 4), text);
+        // Comments — preserve exactly
+        "comment" => {
+            output.push_str(&"    ".repeat(indent));
+            output.push_str(source[node.byte_range()].trim());
+            output.push('\n');
+        }
+
+        // Multiline strings — preserve exactly
+        "string" => {
+            output.push_str(source[node.byte_range()].trim());
+        }
+
+        // Other nodes — default: recurse
+        _ => {
+            for child in node.named_children(&mut node.walk()) {
+                write_node(child, source, output, indent);
+            }
+        }
     }
+}
+
+/// Top-level formatter function
+pub fn format_code(root: Node, source: &str) -> String {
+    let mut output = String::new();
+    write_node(root, source, &mut output, 0);
+    output
 }

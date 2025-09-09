@@ -4,11 +4,7 @@
     clippy::nursery,
 )]
 
-mod parser;
-mod formatter;
-
-use parser::GdscriptParser;
-use formatter::format_tree;
+use gdfastformat::{GdscriptParser, format_code};
 
 struct TestCase<'a> {
     name: &'a str,
@@ -22,7 +18,7 @@ fn run_test(test: &TestCase) {
     match parser.parse(test.source) {
         Ok(tree) => {
             println!("Parsed successfully! Root node kind: {}", tree.root_node().kind());
-            let formatted = format_tree(test.source, &tree);
+            let formatted = format_code(test.source);
             println!("Formatted output:\n{formatted}");
         }
         Err(err) => {
