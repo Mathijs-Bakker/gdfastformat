@@ -10,47 +10,68 @@ mod formatter;
 use parser::GdscriptParser;
 use formatter::format_tree;
 
-fn main() {
-    let mut parser = GdscriptParser::new();
+struct TestCase<'a> {
+    name: &'a str,
+    source: &'a str,
+}
 
-    // Test cases
-    let tests = vec![
-        (
-            "Simple function",
-            r#"
-func _ready():
-    print("Hello World")
-"#,
-        ),
-        (
-            "If statement",
-            r#"
-func _process(delta):
+fn run_test(test: &TestCase) {
+    println!("--- Test: {} ---", test.name);
+    let mut parser = GdscriptParser::new();
+    
+    match parser.parse(test.source) {
+        Ok(tree) => {
+            println!("Parsed successfully! Root node kind: {}", tree.root_node().kind());
+            let formatted = format_tree(test.source, &tree);
+            println!("Formatted output:\n{formatted}");
+        }
+        Err(err) => {
+            println!("Parse error: {err}");
+        }
+    }
+
+    println!("---------------------------\n");
+}
+
+fn main() {
+    let tests = [
+        TestCase {
+            name: "Simple function",
+            source: r#"func _ready():
+    print("Hello World")"#,
+        },
+        TestCase {
+            name: "If statement",
+            source: r#"func _process(delta):
     if delta > 1.0:
-        print("Too slow!")
-"#,
-        ),
-        (
-            "Nested blocks",
-            r#"
-class Player:
+        print("Too slow!")"#,
+        },
+        TestCase {
+            name: "Nested blocks",
+            source: r#"class Player:
     func move():
         if is_moving:
-            print("Moving")
-"#,
-        ),
+            print("Moving")"#,
+        },
+        TestCase {
+            name: "Comments",
+            source: r#"# Top-level comment
+func _ready():
+    print("Hello World")  # inline comment"#,
+        },
+        TestCase {
+            name: "Multi-line string",
+            source: r#"func _ready():
+    var s = """
+Hello
+World
+"""
+    print(s)"#,
+        },
+        // Add more tests here as needed
     ];
 
-    for (name, source) in tests {
-        println!("--- Test: {} ---", name);
-        match parser.parse(source) {
-            Ok(tree) => {
-                println!("Parsed successfully! Root node kind: {}", tree.root_node().kind());
-                let formatted = format_tree(source, &tree);
-                println!("Formatted output:\n{}", formatted);
-            }
-            Err(err) => eprintln!("Parse error: {}", err),
-        }
-        println!("---------------------------\n");
+    for test in &tests {
+        run_test(test);
     }
 }
