@@ -1,81 +1,69 @@
-#[cfg(test)]
-mod tests {
-    use gdfastformat::format_code;
+use gdfastformat::format_source;
 
-    fn check(input: &str, expected: &str) {
-        let formatted = format_code(input);
-        assert_eq!(formatted.trim(), expected.trim());
-    }
+#[test]
+fn test_simple_function() {
+    let source = r#"func _ready():
+    print("Hello World")"#;
 
-    #[test]
-    fn test_simple_function() {
-        check(
-            r#"
-func _ready():
-    print("Hello World")
-"#,
-            r#"
-func _ready():
-    print("Hello World")
-"#,
-        );
-    }
+    let expected = r#"func _ready():
+    print("Hello World")"#;
 
-    #[test]
-    fn test_if_statement() {
-        check(
-            r#"
-func _process(delta):
+    let formatted = format_source(source);
+
+    assert_eq!(formatted.trim_end(), expected.trim_end());
+}
+
+#[test]
+fn test_if_statement() {
+    let source = r#"func _process(delta):
     if delta > 1.0:
-        print("Too slow!")
-"#,
-            r#"
-func _process(delta):
-    if delta > 1.0:
-        print("Too slow!")
-"#,
-        );
-    }
+        print("Too slow!")"#;
 
-    #[test]
-    fn test_nested_blocks() {
-        check(
-            r#"
-class Player:
+    let expected = r#"func _process(delta):
+    if delta > 1.0:
+        print("Too slow!")"#;
+
+    let formatted = format_source(source);
+
+    assert_eq!(formatted.trim_end(), expected.trim_end());
+}
+
+#[test]
+fn test_nested_blocks() {
+    let source = r#"class Player:
     func move():
         if is_moving:
-            print("Moving")
-"#,
-            r#"
-class Player:
+            print("Moving")"#;
+
+    let expected = r#"class Player:
     func move():
         if is_moving:
-            print("Moving")
-"#,
-        );
-    }
+            print("Moving")"#;
 
-    #[test]
-    fn test_comments_and_multiline_string() {
-        check(
-            r#"
-# Top-level comment
+    let formatted = format_source(source);
+
+    assert_eq!(formatted.trim_end(), expected.trim_end());
+}
+
+#[test]
+fn test_comments_and_multiline_string() {
+    let source = r#"# Top-level comment
 func _ready():
     var s = """
 Hello
 World
 """
-    print(s)  # inline comment
-"#,
-            r#"
-# Top-level comment
+    print(s)  # inline comment"#;
+
+    let expected = r#"# Top-level comment
 func _ready():
     var s = """
 Hello
 World
 """
-    print(s)  # inline comment
-"#,
-        );
-    }
+    print(s)  # inline comment"#;
+
+    let formatted = format_source(source);
+
+    assert_eq!(formatted.trim_end(), expected.trim_end());
 }
